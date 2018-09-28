@@ -27,6 +27,21 @@ class Automata():
 		state_closure.add(state)
 		return state_closure
 
+class Grammar():
+	def __init__(self, non_terminal, terminal, s, p):
+		self.non_terminal = non_terminal
+		self.terminal = terminal
+		self.s = s
+		self.p = p
+
+	def __str__(self):
+		string = self.s + ' -> ' + ' | '.join(self.p[self.s]) + '\n'
+		for head, production in self.p.items():
+			if head == self.s:
+				continue
+			string += head + ' -> ' + ' | '.join(production) + '\n'
+		return string
+
 
 def determinize_automata(automata):
 	episulon_closure = {}
@@ -67,23 +82,29 @@ def determinize_automata(automata):
 				if (string_destiny not in states) and (string_destiny not in states_to_be_added):
 					states_to_be_added.append(string_destiny)
 
-
-
-
-
-#				if symbol in automata.transitions[state]:
-#					for destiny_state in automata.transitions[state][symbol]:
-#						for trans in episulon_closure[destiny_state]:
-#							destiny.add(trans)
-#					transitions[state][symbol] = list(destiny)
-#
-#					for final_state in automata.final_states:
-#						if final_state in destiny and final_state not in final_states:
-#							final_states.append(final_state)
-#					print(list(destiny))
-#					print(''.join(list(destiny)))
-#					if (''.join(list(destiny)) not in states) and (''.join(list(destiny)) not in states_to_be_added):
-#						states_to_be_added.append(''.join(list(destiny)))
-
 	new_automata = Automata(states, automata.alphabet, start_state, final_states, transitions)
 	return new_automata
+
+
+def fsm_to_regular_grammar(automata):
+	non_terminal = automata.states
+	terminal = automata.alphabet
+	s = automata.start_state
+	p = {}
+
+	for source, symbol_dict in automata.transitions.items():
+		if source not in p:
+			p[source] = []
+
+		for symbol, destiny in symbol_dict.items():
+			for state in destiny:
+				p[source].append(symbol+state)
+				if state in automata.final_states:
+					p[source].append(symbol)
+
+	if automata.start_state in automata.final_states:
+		p[s+'\''] = p[s]
+		p[s+'\''].append('&')
+
+	grammar = Grammar(non_terminal, terminal, s, p)
+	return grammar

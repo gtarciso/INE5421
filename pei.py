@@ -30,7 +30,11 @@ class Control():
         if self.view.determinize.isChecked():
             self.determinize_automata()
 
-    def determinize_automata(self):
+        elif self.view.convert.isChecked():
+            if(self.view.from_finite_automata.isChecked() and self.view.to_regular_grammar.isChecked()):
+                self.fsm_to_regular_grammar()
+
+    def read_automata(self):
         content = self.view.editor.toPlainText()
         content = content.split('\n')
         states = content[0].split()
@@ -52,6 +56,16 @@ class Control():
             transitions[source][symbol].append(destiny)
 
         automata = algorithms.Automata(states, alphabet, initial_state, final_states, transitions)
+        return automata
+        
+
+    def fsm_to_regular_grammar(self):
+        automata = self.read_automata()
+        regular_grammar = algorithms.fsm_to_regular_grammar(automata)
+        self.view.editor.setText(str(regular_grammar))
+
+    def determinize_automata(self):
+        automata = self.read_automata()
         determinized_automata = algorithms.determinize_automata(automata)
         self.view.editor.setText(str(determinized_automata))
 
