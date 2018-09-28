@@ -1,6 +1,7 @@
+#coding: utf-8
 import sys
 from view import *
-from model import *
+import algorithms
 
 class Control():
     def __init__(self):
@@ -50,7 +51,9 @@ class Control():
                 transitions[source][symbol] = []
             transitions[source][symbol].append(destiny)
 
-        print(transitions['p']['a'])
+        automata = algorithms.Automata(states, alphabet, initial_state, final_states, transitions)
+        determinized_automata = algorithms.determinize_automata(automata)
+        self.view.editor.setText(str(determinized_automata))
 
     def load_file(self):
         file_path = Qt.QFileDialog.getOpenFileName(self.view,'','','')[0]
