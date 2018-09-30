@@ -12,8 +12,9 @@ class Automata():
 		string += self.start_state + '\n'
 		string += ' '.join(self.final_states) + '\n'
 		for source, symbol_dict in self.transitions.items():
-			for symbol, destiny in symbol_dict.items():
-				string += source + ' -> ' + destiny + ' ' + symbol + '\n'
+			for symbol, destiny_list in symbol_dict.items():
+				for destiny in destiny_list:
+					string += source + ' -> ' + destiny + ' ' + symbol + '\n'
 
 		return string
 
@@ -77,7 +78,7 @@ def determinize_automata(automata):
 
 			if (destiny):
 				string_destiny = ''.join(sorted(destiny))
-				transitions[new_state][symbol] = string_destiny
+				transitions[new_state][symbol] = [string_destiny]
 
 				if (string_destiny not in states) and (string_destiny not in states_to_be_added):
 					states_to_be_added.append(string_destiny)
@@ -108,3 +109,30 @@ def fsm_to_regular_grammar(automata):
 
 	grammar = Grammar(non_terminal, terminal, s, p)
 	return grammar
+
+def regular_grammar_to_fsm(grammar):
+	states = grammar.non_terminal
+	states.append('W')
+	alphabet = grammar.terminal
+	start_state = grammar.s
+	final_states = ['W']
+	if '&' in grammar.p[grammar.s]:
+		final_states.append(grammar.s)
+
+	transitions = {}
+	for head, body in grammar.p.items():
+		if head not in transitions:
+			transitions[head] = {}
+
+		for production in body:
+			symbol = production[0]
+			if symbol not in transitions[head]:
+				transitions[head][symbol] = []
+
+			if len(production) == 1:
+				transitions[head][symbol].append('W')
+			elif len(production) == 2:
+				transitions[head][symbol].append(production[1])
+
+	fsm = Automata(states, alphabet, start_state, final_states, transitions)
+	return fsm

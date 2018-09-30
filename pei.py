@@ -33,6 +33,8 @@ class Control():
         elif self.view.convert.isChecked():
             if(self.view.from_finite_automata.isChecked() and self.view.to_regular_grammar.isChecked()):
                 self.fsm_to_regular_grammar()
+            elif (self.view.from_regular_grammar.isChecked()) and (self.view.to_finite_automata.isChecked()):
+                self.regular_grammar_to_fsm()
 
     def read_automata(self):
         content = self.view.editor.toPlainText()
@@ -43,31 +45,59 @@ class Control():
         final_states = content[3].split()
 
         transitions = {}
+        for state in states:
+            transitions[state] = {}
+            for symbol in alphabet:
+                transitions[state][symbol] = []
         for transition in content[4:]:
             t = transition.split()
             source = t[0]
             destiny = t[2]
             symbol = t[3]
-
-            if source not in transitions:
-                transitions[source] = {}
-            if symbol not in transitions[source]:
-                transitions[source][symbol] = []
             transitions[source][symbol].append(destiny)
 
         automata = algorithms.Automata(states, alphabet, initial_state, final_states, transitions)
         return automata
         
+    def regular_grammar_to_fsm(self):
+        content = self.view.editor.toPlainText()
+        content = content.split('\n')
+        s = content[0][0]
+        productions = {}
+
+        # create productions
+        for production in content:
+            head = production[0]
+            productions[head] = []
+            p = production.split()
+            for body in p[2:]:
+                if body == '|':
+                    continue
+                else:
+                    productions[head].append(body)
+
+        non_terminal = list(productions.keys())
+        terminal = []
+        # analise  productions to find terminals
+        for head, body in productions.items():
+            for production in body:
+                for symbol in production:
+                    if symbol not in non_terminal and symbol not in terminal:
+                        terminal.append(symbol)
+
+        grammar = algorithms.Grammar(non_terminal, terminal, s, productions)
+        fsm = algorithms.regular_grammar_to_fsm(grammar)
+        self.view.editor.setText(str(fsm)[:-1])
 
     def fsm_to_regular_grammar(self):
         automata = self.read_automata()
         regular_grammar = algorithms.fsm_to_regular_grammar(automata)
-        self.view.editor.setText(str(regular_grammar))
+        self.view.editor.setText(str(regular_grammar)[:-1])
 
     def determinize_automata(self):
         automata = self.read_automata()
         determinized_automata = algorithms.determinize_automata(automata)
-        self.view.editor.setText(str(determinized_automata))
+        self.view.editor.setText(str(determinized_automata)[:-1])
 
     def load_file(self):
         file_path = Qt.QFileDialog.getOpenFileName(self.view,'','','')[0]
