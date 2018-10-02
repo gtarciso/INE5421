@@ -35,6 +35,11 @@ class Control():
                 self.fsm_to_regular_grammar()
             elif (self.view.from_regular_grammar.isChecked()) and (self.view.to_finite_automata.isChecked()):
                 self.regular_grammar_to_fsm()
+            elif (self.view.from_regular_expression.isChecked()) and (self.view.to_finite_automata.isChecked()):
+                self.regular_expression_to_fsm()
+
+    def regular_expression_to_fsm(self):
+        print('peipei')
 
     def read_automata(self):
         content = self.view.editor.toPlainText()

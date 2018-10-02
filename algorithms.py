@@ -43,6 +43,79 @@ class Grammar():
 			string += head + ' -> ' + ' | '.join(production) + '\n'
 		return string
 
+class Syntax_Tree():
+	def __init__(self, expression):
+		self.tree = {}
+		expression = expression + '#'
+		self.reserved_symbols = {'#', '(', ')', '|', '*'}
+		self.create(1, expression)
+
+#	def create(self, index, expression):
+#		# stop condition
+#		if len(expression) == 1:
+#			self.tree[index] = symbol
+#			return
+#
+#		symbol = expression[-1]
+#		if symbol == '#' or symbol not in reserved_symbols:
+#			if expression[-2] != '|':
+#				self.create(2*index, expression[:-1])  # left subtree
+#				self.create(2*index+1, symbol)  # right subtree
+#				self.tree[index] = '.'
+#			else:
+#				self.tree[index] = '.'
+#				self.separate_or(index*2+1, expression)
+#
+#		elif symbol == '*':
+#			# the operation only applies to the closest symbol
+#			if expression[-2] != ')':
+#				# it means there's only the operator
+#				if len(expression) == 2:
+#					self.tree[index] = '*'
+#					self.create(index*2+1, expression[-2])
+#			# the operation is inside ()
+#			else:
+#				# find where () ends
+#				parenthesis_end = self.parenthesis_end(expression[:-1])
+#				self.tree[index] = '.'
+#				self.create(index*2+1, expression[parenthesis_end:])
+#				# not the hole expression is in (), put the remaining expression on left child
+#				if parenthesis_end != 0:
+#					self.create(index*2, expression[:parenthesis_end])
+#
+#		elif symbol == ')':
+#			parenthesis_end = self.find_parenthesis_end(expression)
+#			if expression[parenthesis_end-1] == '|':
+#				if expression[parenthesis_end-2] == ')':
+#					new_parenthesis_end = self.find_parenthesis_end(expression[:parenthesis_end-2])
+#					self.tree[index] = '.'
+#					self.create(index*2, expression[:new_parenthesis_end])
+#					self.separate_or(index*2+1, expression[new_parenthesis_end:])
+#				else:
+#					self.tree[index] = '.'
+#					self.create(2*index, expression[:parenthesis_end])
+#					self.separate_or(index*2+1, expression[parenthesis_end:])
+#			else:
+#				expression = expression[:-1]
+#				expression.pop(parenthesis_end)
+#				self.create(index, expression)
+#
+#	def find_parenthesis_end(self, expression):
+#		parenthesis_end = 0
+#		new_parenthesis = 0
+#		for i in reversed(range(0, len(expression)-1)):
+#			if symbol[i] == ')':
+#				new_parenthesis += 1
+#			elif symbol[i] == '(':
+#				if new_parenthesis == 0:
+#					parenthesis_end = i
+#					break
+#				else:
+#					new_parenthesis -= 1
+#		return parenthesis_end
+#
+#	def separate_or(self, index, expression):
+#		pass	
 
 def determinize_automata(automata):
 	episulon_closure = {}
