@@ -47,8 +47,121 @@ class Syntax_Tree():
 	def __init__(self, expression):
 		self.tree = {}
 		expression = expression + '#'
-		self.reserved_symbols = {'#', '(', ')', '|', '*'}
-		self.create(1, expression)
+		self.create_tree(1, expression)
+
+	def create_tree(self, index, expression):
+		#stop conditions
+		if len(expression) == 0:
+			return
+		elif len(expression) == 1:
+			self.tree[index] = expression
+			return
+
+		symbol = expression[len(expression)-1]
+		operation = expression[len(expression)-2]
+
+		# Treats the case were the rightmost symbol is an alphabet symbol
+		if symbol != ')' and symbol != '*':
+			if operation != '|':
+				self.tree[index] = '.'
+				self.create_tree(index*2, expression[:-1])
+				self.create_tree(index*2+1, symbol)
+			else:
+				operand_index = self.left_operand_index(expression[:-2])
+
+				# there are more on the left side besides this operation. put
+				# a concatenation symbol here and move the or operation to the
+				# left branch
+				if operand_index != 0:
+					self.tree[index] = '.'
+					self.create_tree(index*2, expression[:operand_index])
+					self.create_or_branch(index*2+1, expression[operand_index:])
+
+				# there's only the or operation to do, so do it here
+				else:
+					self.create_or_branch(index, expression)
+
+		# Treats the case where the rightmost symbol is a closure operation
+		elif symbol == '*':
+			operand_index = self.left_operand_index(expression[:-1])
+			if operand_index != 0:
+				self.tree[index] = '.'
+				self.create_tree(index*2, expression[:operand_index])
+				self.create_closure_branch(index*2+1, expression[operand_index:])
+			else:
+				self.create_closure_branch(index, expression)
+
+		# Treats the case where 
+		elif symbol == ')':
+			opening_index = self.parenthesis_opening_index(expression[:-1])
+			predecessor_symbol = expression[opening_index-1]
+
+			# The parenthesis where useless. Remove them and try again
+			if opening_index == 0 or predecessor_symbol != '|':
+				expression = expression[:-1]
+				expression = list(expression)
+				expression.pop(opening_index)
+				expression = ''.join(expression)
+				self.create_tree(index, expression)
+
+			# It was an or operand. get the other one and start an or branch
+			else:
+				operand_index = self.left_operand_index(expression[:opening_index])
+
+				# there are more on the left side besides this operation. put
+				# a concatenation symbol here and move the or operation to the
+				# left branch
+				if operand_index != 0:
+					self.tree[index] = '.'
+					self.create_tree(index*2, expression[:operand_index])
+					self.create_or_branch(index*2+1, expression[operand_index:])
+
+				# there's only the or operation to do, so do it here
+				else:
+					self.create_or_branch(index, expression)
+
+
+	# get the index where the left side of a operations stars
+	def left_operand_index(self, expression):
+		symbol = expression[len(expression)-1]
+
+		if symbol == '*':
+			return self.left_operand_index(expression[:-1])
+		elif symbol != ')':
+			return len(expression) - 1
+		else:
+			opens = self.parenthesis_opening_index(expression[:-1])
+			return opens
+
+	# returns where, from right to left, the most recente closed parenthesis
+	# was open
+	def parenthesis_opening_index(self, expression):
+		new_closed_parenthesis = 0
+
+		for i in reversed(range(len(expression)-1)):
+			if expression[i] == ')':
+				new_closed_parenthesis += 1
+
+			elif expression[i] == '(':
+				if new_closed_parenthesis == 0:
+					return i
+				else:
+					new_closed_parenthesis -= 1
+
+	def create_or_branch(self, index, expression):
+		if expression[len(expression)-1] != ')':
+			operator_index = len(expression)-2
+		else:
+			start_index = self.parenthesis_opening_index(expression[:-1])
+			operator_index = start_index - 1	
+
+		self.tree[index] = '|'
+		self.create_tree(2*index, expression[:operator_index])
+		self.create_tree(2*index+1, expression[operator_index+1:])
+
+	def create_closure_branch(self, index, expression):
+		self.tree[index] = '*'
+		self.create_tree(2*index+1, expression[:-1])
 
 #	def create(self, index, expression):
 #		# stop condition
@@ -116,6 +229,9 @@ class Syntax_Tree():
 #
 #	def separate_or(self, index, expression):
 #		pass	
+
+def regular_expression_to_fsm(expression):
+	tree = Syntax_Tree(expression)
 
 def determinize_automata(automata):
 	episulon_closure = {}

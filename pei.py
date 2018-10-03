@@ -39,7 +39,8 @@ class Control():
                 self.regular_expression_to_fsm()
 
     def regular_expression_to_fsm(self):
-        print('peipei')
+        expression = self.view.editor.toPlainText()
+        algorithms.regular_expression_to_fsm(expression)
 
     def read_automata(self):
         content = self.view.editor.toPlainText()
