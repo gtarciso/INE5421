@@ -1,3 +1,4 @@
+#coding: utf-8
 class Automata():
 	def __init__(self, states, alphabet, start_state, final_states, transitions):
 		self.states = states
@@ -46,8 +47,20 @@ class Grammar():
 class Syntax_Tree():
 	def __init__(self, expression):
 		self.tree = {}
+		self.roots = {}
+		self.nullable = {}
+		self.firstpos = {}
+		self.lastpos = {}
+		self.followpos = {}
 		expression = expression + '#'
 		self.create_tree(1, expression)
+		self.calculate_nullable(1)
+		self.calculate_firstpos(1)
+		self.calculate_lastpos(1)
+		# initialize followpos
+		for x,i in self.roots.items():
+			self.followpos[i] = set()
+		self.calculate_followpos(1)
 
 	def create_tree(self, index, expression):
 		#stop conditions
@@ -55,6 +68,7 @@ class Syntax_Tree():
 			return
 		elif len(expression) == 1:
 			self.tree[index] = expression
+			self.roots[index] = len(self.roots)+1
 			return
 
 		symbol = expression[len(expression)-1]
@@ -120,7 +134,6 @@ class Syntax_Tree():
 				else:
 					self.create_or_branch(index, expression)
 
-
 	# get the index where the left side of a operations stars
 	def left_operand_index(self, expression):
 		symbol = expression[len(expression)-1]
@@ -163,75 +176,106 @@ class Syntax_Tree():
 		self.tree[index] = '*'
 		self.create_tree(2*index+1, expression[:-1])
 
-#	def create(self, index, expression):
-#		# stop condition
-#		if len(expression) == 1:
-#			self.tree[index] = symbol
-#			return
-#
-#		symbol = expression[-1]
-#		if symbol == '#' or symbol not in reserved_symbols:
-#			if expression[-2] != '|':
-#				self.create(2*index, expression[:-1])  # left subtree
-#				self.create(2*index+1, symbol)  # right subtree
-#				self.tree[index] = '.'
-#			else:
-#				self.tree[index] = '.'
-#				self.separate_or(index*2+1, expression)
-#
-#		elif symbol == '*':
-#			# the operation only applies to the closest symbol
-#			if expression[-2] != ')':
-#				# it means there's only the operator
-#				if len(expression) == 2:
-#					self.tree[index] = '*'
-#					self.create(index*2+1, expression[-2])
-#			# the operation is inside ()
-#			else:
-#				# find where () ends
-#				parenthesis_end = self.parenthesis_end(expression[:-1])
-#				self.tree[index] = '.'
-#				self.create(index*2+1, expression[parenthesis_end:])
-#				# not the hole expression is in (), put the remaining expression on left child
-#				if parenthesis_end != 0:
-#					self.create(index*2, expression[:parenthesis_end])
-#
-#		elif symbol == ')':
-#			parenthesis_end = self.find_parenthesis_end(expression)
-#			if expression[parenthesis_end-1] == '|':
-#				if expression[parenthesis_end-2] == ')':
-#					new_parenthesis_end = self.find_parenthesis_end(expression[:parenthesis_end-2])
-#					self.tree[index] = '.'
-#					self.create(index*2, expression[:new_parenthesis_end])
-#					self.separate_or(index*2+1, expression[new_parenthesis_end:])
-#				else:
-#					self.tree[index] = '.'
-#					self.create(2*index, expression[:parenthesis_end])
-#					self.separate_or(index*2+1, expression[parenthesis_end:])
-#			else:
-#				expression = expression[:-1]
-#				expression.pop(parenthesis_end)
-#				self.create(index, expression)
-#
-#	def find_parenthesis_end(self, expression):
-#		parenthesis_end = 0
-#		new_parenthesis = 0
-#		for i in reversed(range(0, len(expression)-1)):
-#			if symbol[i] == ')':
-#				new_parenthesis += 1
-#			elif symbol[i] == '(':
-#				if new_parenthesis == 0:
-#					parenthesis_end = i
-#					break
-#				else:
-#					new_parenthesis -= 1
-#		return parenthesis_end
-#
-#	def separate_or(self, index, expression):
-#		pass	
+	def calculate_nullable(self, index):
+		if index*2 in self.tree:
+			self.calculate_nullable(index*2)
+		if index*2+1 in self.tree:
+			self.calculate_nullable(index*2+1)
+
+		if self.tree[index] == '|':
+			self.nullable[index] = self.nullable[index*2] or self.nullable[index*2+1]
+		elif self.tree[index] == '.':
+			self.nullable[index] = self.nullable[index*2] and self.nullable[index*2+1]
+		elif self.tree[index] == '*':
+			self.nullable[index] = True
+		else:
+			self.nullable[index] = False
+
+	def calculate_firstpos(self, index):
+		if index*2 in self.tree:
+			self.calculate_firstpos(index*2)
+		if index*2+1 in self.tree:
+			self.calculate_firstpos(index*2+1)
+
+		if self.tree[index] == '|':
+			self.firstpos[index] = self.firstpos[index*2] | self.firstpos[index*2+1]
+		elif self.tree[index] == '.':
+			if self.nullable[index*2]:
+				self.firstpos[index] = self.firstpos[index*2] | self.firstpos[index*2+1]
+			else:
+				self.firstpos[index] = self.firstpos[index*2]
+		elif self.tree[index] == '*':
+			self.firstpos[index] = self.firstpos[index*2+1]
+		else:
+			self.firstpos[index] = {self.roots[index]}
+
+	def calculate_lastpos(self, index):
+		if index*2 in self.tree:
+			self.calculate_lastpos(index*2)
+		if index*2+1 in self.tree:
+			self.calculate_lastpos(index*2+1)
+
+		if self.tree[index] == '|':
+			self.lastpos[index] = self.lastpos[index*2] | self.lastpos[index*2+1]
+		elif self.tree[index] == '.':
+			if self.nullable[index*2+1]:
+				self.lastpos[index] = self.lastpos[index*2] | self.lastpos[index*2+1]
+			else:
+				self.lastpos[index] = self.lastpos[index*2+1]
+		elif self.tree[index] == '*':
+			self.lastpos[index] = self.lastpos[index*2+1]
+		else:
+			self.lastpos[index] = {self.roots[index]}
+
+	def calculate_followpos(self, index):
+		if index*2 in self.tree:
+			self.calculate_followpos(index*2)
+		if index*2+1 in self.tree:
+			self.calculate_followpos(index*2+1)
+
+		if self.tree[index] == '.':
+			for i in self.lastpos[index*2]:
+				self.followpos[i] = self.followpos[i] | self.firstpos[index*2+1]
+		elif self.tree[index] == '*':
+			for i in self.lastpos[index]:
+				self.followpos[i] = self.followpos[i] | self.firstpos[index]
 
 def regular_expression_to_fsm(expression):
 	tree = Syntax_Tree(expression)
+	start_state = ''.join(map(str, sorted(list(tree.firstpos[1])))) 
+	alphabet = []
+	for i in tree.roots:
+		if tree.tree[i] != '#' and tree.tree[i] not in alphabet:
+			alphabet.append(tree.tree[i])
+
+	transitions = {}
+	states = []
+	unmarked_states = [tree.firstpos[1]]
+	while(unmarked_states):
+		state = unmarked_states.pop()
+		state_name = ''.join(map(str, sorted(list(state))))
+		transitions[state_name] = {}
+		states.append(state_name)
+		for symbol in alphabet:
+			b = set()
+			for i in state:
+				for index, value in tree.roots.items():
+					if i == value and tree.tree[index] == symbol:
+						b = b | tree.followpos[i]
+			b_name = ''.join(map(str, sorted(list(b))))
+			if b and b not in unmarked_states and b_name not in states:
+				unmarked_states.append(b)
+			transitions[state_name][symbol] = [b_name]
+
+	final_states = []
+	final_state_name = str(len(tree.roots))
+	for state in states:
+		if final_state_name in state:
+			final_states.append(state)
+
+	fsm = Automata(states, alphabet, start_state, final_states, transitions)
+	return fsm		
+
 
 def determinize_automata(automata):
 	episulon_closure = {}

@@ -40,7 +40,8 @@ class Control():
 
     def regular_expression_to_fsm(self):
         expression = self.view.editor.toPlainText()
-        algorithms.regular_expression_to_fsm(expression)
+        fsm = algorithms.regular_expression_to_fsm(expression)
+        self.view.editor.setText(str(fsm)[:-1])
 
     def read_automata(self):
         content = self.view.editor.toPlainText()
