@@ -287,16 +287,18 @@ def determinize_automata(automata):
 	start_state = ''.join(sorted(episulon_closure[automata.start_state]))
 	final_states = []
 	states_to_be_added = []
-	states_to_be_added.append(start_state)
+	states_to_be_added.append(episulon_closure[automata.start_state])
 
 	while(states_to_be_added):
 		new_state = states_to_be_added.pop(0)
-		states.append(new_state)
+		new_state_name = ''.join(sorted(list(new_state)))
+		states.append(new_state_name)
 		for final_state in automata.final_states:
-			if final_state in new_state:
-				final_states.append(new_state)
+			for state in new_state:
+				if final_state == state:
+					final_states.append(new_state_name)
 
-		transitions[new_state] = {}
+		transitions[new_state_name] = {}
 
 		for symbol in automata.alphabet:
 			destiny = set()
@@ -311,10 +313,10 @@ def determinize_automata(automata):
 
 			if (destiny):
 				string_destiny = ''.join(sorted(destiny))
-				transitions[new_state][symbol] = [string_destiny]
+				transitions[new_state_name][symbol] = [string_destiny]
 
 				if (string_destiny not in states) and (string_destiny not in states_to_be_added):
-					states_to_be_added.append(string_destiny)
+					states_to_be_added.append(destiny)
 
 	new_automata = Automata(states, automata.alphabet, start_state, final_states, transitions)
 	return new_automata
@@ -369,3 +371,65 @@ def regular_grammar_to_fsm(grammar):
 
 	fsm = Automata(states, alphabet, start_state, final_states, transitions)
 	return fsm
+
+def remove_dead_states(automata):
+	states = []
+	to_check = [x for x in automata.final_states]
+
+	for state in to_check:
+		states.append(state)
+		for symbol in automata.transitions[state]:
+			for destiny in automata.transitions[state][symbol]:
+				if destiny not in states and destiny not in to_check:
+					to_check.append(destiny)
+
+	alphabet = automata.alphabet
+	start_state = automata.start_state
+	final_states = automata.final_states
+
+	for origin, transition in automata.transitions.items():
+		if origin not in states:
+			del automata.transitions[origin]
+		else:
+			for symbol, destiny in transition.items():
+				for destiny_state in destiny:
+					if destiny_state not in states:
+						automata.transitions[origin][symbol].pop(destiny_state)
+						if not automata.transitions[origin][symbol]:
+							del automata.transitions[origin][symbol]
+
+	transitions = automata.transitions
+
+	resulting_automata = Automata(states, alphabet, start_state, final_states, transitions)
+	return resulting_automata
+
+def minimize_automata(automata):
+	automata = determinize_automata(automata)
+	automata = remove_dead_states(automata)
+	automata = remove_equivalent_states(automata)
+
+
+def remove_equivalent_states(automata):
+	p = [automata.final_states, [state for state in automata.states if state not in automata.final_states]]
+	consistent = False
+	while not consistent:
+		consistent = True
+		for sets in p:
+			for symbol in automata.alphabet:
+				for sett in p:
+					temp = []
+					for q in sett:
+						if symbol in automata.transitions[q]:
+							for destiny in automata.transitions[q][symbol]:
+								if destiny in sets:
+									if q not in temp:
+										temp.append(q)
+					if temp and temp != sett:
+						consistent = False
+						p.remove(sett)
+						p.append(temp)
+						temp_t = list(sett)
+						for state in temp:
+							temp_t.remove(state)
+
+						p.append(temp_t)

@@ -38,6 +38,13 @@ class Control():
             elif (self.view.from_regular_expression.isChecked()) and (self.view.to_finite_automata.isChecked()):
                 self.regular_expression_to_fsm()
 
+        elif self.view.minimize.isChecked():
+            self.minimize_automata()
+
+    def minimize_automata(self):
+        automata = self.read_automata()
+        algorithms.minimize_automata(automata)
+
     def regular_expression_to_fsm(self):
         expression = self.view.editor.toPlainText()
         fsm = algorithms.regular_expression_to_fsm(expression)
