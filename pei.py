@@ -43,7 +43,8 @@ class Control():
 
     def minimize_automata(self):
         automata = self.read_automata()
-        algorithms.minimize_automata(automata)
+        resulting_automata = algorithms.minimize_automata(automata)
+        self.view.editor.setText(str(resulting_automata)[:-1])
 
     def regular_expression_to_fsm(self):
         expression = self.view.editor.toPlainText()
@@ -63,6 +64,7 @@ class Control():
             transitions[state] = {}
             for symbol in alphabet:
                 transitions[state][symbol] = []
+            transitions[state]['&'] = []
         for transition in content[4:]:
             t = transition.split()
             source = t[0]
@@ -96,7 +98,7 @@ class Control():
         for head, body in productions.items():
             for production in body:
                 for symbol in production:
-                    if symbol not in non_terminal and symbol not in terminal:
+                    if symbol not in non_terminal and symbol not in terminal and symbol != '&':
                         terminal.append(symbol)
 
         grammar = algorithms.Grammar(non_terminal, terminal, s, productions)

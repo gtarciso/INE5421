@@ -293,10 +293,9 @@ def determinize_automata(automata):
 		new_state = states_to_be_added.pop(0)
 		new_state_name = ''.join(sorted(list(new_state)))
 		states.append(new_state_name)
-		for final_state in automata.final_states:
-			for state in new_state:
-				if final_state == state:
-					final_states.append(new_state_name)
+		for state in new_state:
+			if state in automata.final_states and new_state_name not in final_states:
+				final_states.append(new_state_name)
 
 		transitions[new_state_name] = {}
 
@@ -315,7 +314,7 @@ def determinize_automata(automata):
 				string_destiny = ''.join(sorted(destiny))
 				transitions[new_state_name][symbol] = [string_destiny]
 
-				if (string_destiny not in states) and (string_destiny not in states_to_be_added):
+				if (string_destiny not in states) and (destiny not in states_to_be_added):
 					states_to_be_added.append(destiny)
 
 	new_automata = Automata(states, automata.alphabet, start_state, final_states, transitions)
@@ -339,9 +338,8 @@ def fsm_to_regular_grammar(automata):
 					p[source].append(symbol)
 
 	if automata.start_state in automata.final_states:
-		p[s+'\''] = p[s]
-		p[s+'\''].append('&')
-
+		p[s+'\''] = list(p[s])
+		p[s].append('&')
 	grammar = Grammar(non_terminal, terminal, s, p)
 	return grammar
 
@@ -407,7 +405,7 @@ def minimize_automata(automata):
 	automata = determinize_automata(automata)
 	automata = remove_dead_states(automata)
 	automata = remove_equivalent_states(automata)
-
+	return automata
 
 def remove_equivalent_states(automata):
 	p = [automata.final_states, [state for state in automata.states if state not in automata.final_states]]
@@ -433,3 +431,35 @@ def remove_equivalent_states(automata):
 							temp_t.remove(state)
 
 						p.append(temp_t)
+	return recreate_states(automata, p)
+
+def recreate_states(automata, p):
+    states = []
+    for state in p:
+        states.append(''.join(state))
+    for state in p:
+        if automata.start_state in state:
+            start_state = ''.join(state)
+            break
+    final_states = []
+    for state in p:
+        for final_state in automata.final_states:
+            if final_state in state and ''.join(state) not in final_states:
+                final_states.append(''.join(state))
+
+    transitions = {}
+    for state in p:
+        state_name = ''.join(state)
+        transitions[state_name] = {}
+        for symbol in automata.alphabet:
+        	destiny = ''
+        	if symbol in automata.transitions[state[0]]:
+        		for state2 in p:
+        			for transition_destiny in automata.transitions[state[0]][symbol]:
+        				if transition_destiny in state2:
+        					destiny = ''.join(state2)
+        	if destiny:
+        		transitions[state_name][symbol] = [destiny]
+
+    resulting_automata = Automata(states, automata.alphabet, start_state, final_states, transitions)
+    return resulting_automata
