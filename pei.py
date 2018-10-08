@@ -41,8 +41,27 @@ class Control():
         elif self.view.minimize.isChecked():
             self.minimize_automata()
 
+        elif self.view.union.isChecked():
+            self.unite_automata()
+
+        elif self.view.intersec.isChecked():
+            self.intersec_automata()
+
+    def intersec_automata(self):
+        automata_1 = self.read_automata(self.view.editor)
+        automata_2 = self.read_automata(self.view.secondary_editor)
+        automata = algorithms.intersec_automata(automata_1, automata_2)
+        self.view.editor.setText(str(automata)[:-1])
+
+    def unite_automata(self):
+        automata_1 = self.read_automata(self.view.editor)
+        automata_2 = self.read_automata(self.view.secondary_editor)
+        automata = algorithms.unite_automata(automata_1, automata_2)
+        self.view.editor.setText(str(automata)[:-1])
+
+
     def minimize_automata(self):
-        automata = self.read_automata()
+        automata = self.read_automata(self.view.editor)
         resulting_automata = algorithms.minimize_automata(automata)
         self.view.editor.setText(str(resulting_automata)[:-1])
 
@@ -51,8 +70,8 @@ class Control():
         fsm = algorithms.regular_expression_to_fsm(expression)
         self.view.editor.setText(str(fsm)[:-1])
 
-    def read_automata(self):
-        content = self.view.editor.toPlainText()
+    def read_automata(self, editor):
+        content = editor.toPlainText()
         content = content.split('\n')
         states = content[0].split()
         alphabet = content[1].split()
@@ -106,12 +125,12 @@ class Control():
         self.view.editor.setText(str(fsm)[:-1])
 
     def fsm_to_regular_grammar(self):
-        automata = self.read_automata()
+        automata = self.read_automata(self.view.editor)
         regular_grammar = algorithms.fsm_to_regular_grammar(automata)
         self.view.editor.setText(str(regular_grammar)[:-1])
 
     def determinize_automata(self):
-        automata = self.read_automata()
+        automata = self.read_automata(self.view.editor)
         determinized_automata = algorithms.determinize_automata(automata)
         self.view.editor.setText(str(determinized_automata)[:-1])
 

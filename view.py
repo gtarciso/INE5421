@@ -6,8 +6,12 @@ class View(Qt.QMainWindow):
         super(View, self).__init__()
         self.widget = Qt.QWidget(self)
         self.editor = Qt.QTextEdit()
+        self.secondary_editor = Qt.QTextEdit()
         self.layout = Qt.QGridLayout();
-        self.layout.addWidget(self.editor, 0, 0, 1, -1)
+        self.layout.addWidget(self.editor, 0, 0, 1, 2)
+        self.layout.addWidget(self.secondary_editor, 0, 2, 1, -1)
+        self.editor.setText('Editor principal para operações')
+        self.secondary_editor.setText('Editor secundário para união e intersecção')
         self.widget.setLayout(self.layout)
 
         self.create_buttons()

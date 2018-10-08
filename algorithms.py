@@ -29,6 +29,43 @@ class Automata():
 		state_closure.add(state)
 		return state_closure
 
+	def remove_name_conflict(self, automata_2):
+		changed = False
+		for state in list(self.states):
+			if state in automata_2.states:
+				changed = True
+				for origin, transition in dict(self.transitions).items():
+					if origin == state:
+						self.transitions[state+'\''] = dict(self.transitions[state])
+						del self.transitions[state]
+					for symbol, destiny in transition.items():
+						if origin != state:
+							if symbol in self.transitions[origin] and state in destiny:
+								self.transitions[origin][symbol].remove(state)
+								self.transitions[origin][symbol].append(state + '\'')
+						else:
+							if symbol in self.transitions[origin+'\''] and state in destiny:
+								self.transitions[origin+'\''][symbol].remove(state)
+								self.transitions[origin+'\''][symbol].append(state + '\'')
+				self.states.remove(state)
+				self.states.append(state+'\'')
+				if self.start_state == state:
+					self.start_state = state + '\''
+				if state in self.final_states:
+					self.final_states.remove(state)
+					self.final_states.append(state+'\'')
+
+		if changed:
+			self.remove_name_conflict(automata_2)
+
+	def complement(self):
+		final_states = []
+		for state in self.states:
+			if state not in self.final_states:
+				final_states.append(state)
+
+		self.final_states = final_states
+
 class Grammar():
 	def __init__(self, non_terminal, terminal, s, p):
 		self.non_terminal = non_terminal
@@ -463,3 +500,31 @@ def recreate_states(automata, p):
 
     resulting_automata = Automata(states, automata.alphabet, start_state, final_states, transitions)
     return resulting_automata
+
+def unite_automata(automata_1, automata_2):
+	automata_1.remove_name_conflict(automata_2)
+	start_state = 'q0'
+	while(start_state in automata_1.states or start_state in automata_2.states):
+		start_state += '\''
+	states = automata_1.states + automata_2.states
+	states.append(start_state)
+	final_states = automata_1.final_states + automata_2.final_states
+	alphabet = set(automata_1.alphabet)
+	alphabet.union(automata_2.alphabet)
+	alphabet = list(alphabet)
+	transitions = dict(automata_1.transitions)
+	transitions.update(automata_2.transitions)
+	transitions[start_state] = {}
+	transitions[start_state]['&'] = [automata_1.start_state, automata_2.start_state]
+
+	automata = Automata(states, alphabet, start_state, final_states, transitions)
+	return automata
+
+
+def intersec_automata(automata_1, automata_2):
+	automata_1.complement()
+	automata_2.complement()
+
+	automata = unite_automata(automata_1, automata_2)
+	automata.complement()
+	return automata
