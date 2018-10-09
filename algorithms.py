@@ -382,10 +382,13 @@ def fsm_to_regular_grammar(automata):
 
 def regular_grammar_to_fsm(grammar):
 	states = grammar.non_terminal
-	states.append('W')
+	final_state = 'W'
+	while(final_state in grammar.non_terminal):
+		final_state += '\''
+	states.append(final_state)
 	alphabet = grammar.terminal
 	start_state = grammar.s
-	final_states = ['W']
+	final_states = [final_state]
 	if '&' in grammar.p[grammar.s]:
 		final_states.append(grammar.s)
 
@@ -400,10 +403,11 @@ def regular_grammar_to_fsm(grammar):
 				transitions[head][symbol] = []
 
 			if len(production) == 1:
-				transitions[head][symbol].append('W')
+				transitions[head][symbol].append(final_state)
 			elif len(production) == 2:
 				transitions[head][symbol].append(production[1])
 
+	transitions[final_state] = {}
 	fsm = Automata(states, alphabet, start_state, final_states, transitions)
 	return fsm
 
@@ -411,25 +415,27 @@ def remove_dead_states(automata):
 	states = []
 	to_check = [x for x in automata.final_states]
 
-	for state in to_check:
-		states.append(state)
-		for symbol in automata.transitions[state]:
-			for destiny in automata.transitions[state][symbol]:
-				if destiny not in states and destiny not in to_check:
-					to_check.append(destiny)
+	while(to_check):
+		check_state = to_check.pop()
+		states.append(check_state)
+		for origin, transition in automata.transitions.items():
+			for symbol, destiny in transition.items():
+				for state in destiny:
+					if state == check_state and origin not in states and origin not in to_check:
+						to_check.append(origin)
 
 	alphabet = automata.alphabet
 	start_state = automata.start_state
 	final_states = automata.final_states
 
-	for origin, transition in automata.transitions.items():
+	for origin, transition in dict(automata.transitions).items():
 		if origin not in states:
 			del automata.transitions[origin]
 		else:
 			for symbol, destiny in transition.items():
 				for destiny_state in destiny:
 					if destiny_state not in states:
-						automata.transitions[origin][symbol].pop(destiny_state)
+						automata.transitions[origin][symbol].remove(destiny_state)
 						if not automata.transitions[origin][symbol]:
 							del automata.transitions[origin][symbol]
 

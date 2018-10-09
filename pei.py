@@ -102,9 +102,9 @@ class Control():
 
         # create productions
         for production in content:
-            head = production[0]
-            productions[head] = []
             p = production.split()
+            head = p[0]
+            productions[head] = []
             for body in p[2:]:
                 if body == '|':
                     continue
@@ -116,9 +116,9 @@ class Control():
         # analise  productions to find terminals
         for head, body in productions.items():
             for production in body:
-                for symbol in production:
-                    if symbol not in non_terminal and symbol not in terminal and symbol != '&':
-                        terminal.append(symbol)
+                symbol = production[0]
+                if symbol not in non_terminal and symbol not in terminal and symbol != '&':
+                    terminal.append(symbol)
 
         grammar = algorithms.Grammar(non_terminal, terminal, s, productions)
         fsm = algorithms.regular_grammar_to_fsm(grammar)
