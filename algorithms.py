@@ -302,13 +302,16 @@ def regular_expression_to_fsm(expression):
 			b_name = ''.join(map(str, sorted(list(b))))
 			if b and b not in unmarked_states and b_name not in states:
 				unmarked_states.append(b)
-			transitions[state_name][symbol] = [b_name]
+			# if there's a destiny, create transition
+			if b_name:
+				transitions[state_name][symbol] = [b_name]
 
 	final_states = []
 	final_state_name = str(len(tree.roots))
 	for state in states:
 		if final_state_name in state:
 			final_states.append(state)
+
 
 	fsm = Automata(states, alphabet, start_state, final_states, transitions)
 	return fsm		
@@ -533,4 +536,10 @@ def intersec_automata(automata_1, automata_2):
 
 	automata = unite_automata(automata_1, automata_2)
 	automata.complement()
+
+	# starting state is just a state to unite both automatas.
+	# letting it be a final state might change the automata's expected behaviour.
+	if automata.start_state in automata.final_states:
+		automata.final_states.remove(automata.start_state)
+
 	return automata
